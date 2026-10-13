@@ -10,10 +10,14 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
 <title>Gastos de casa</title>
 <style>
 :root{
   --bg:#F4F5FB; --card:#fff; --text:#1E2233; --muted:#7A8094; --border:#E8EAF3;
+  --round:"Nunito",ui-rounded,"SF Pro Rounded","Hiragino Maru Gothic ProN",system-ui,sans-serif;
   --primary:#6C5CE7; --primary-soft:#EFECFF; --danger:#E5484D; --shadow:0 4px 20px rgba(30,34,80,.06);
 }
 @media (prefers-color-scheme: dark){
@@ -24,6 +28,8 @@
 html,body{margin:0;background:var(--bg);color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 button{font:inherit;color:inherit;cursor:pointer}
+button:focus{outline:none}
+button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .hidden{display:none!important}
 h3{margin:22px 4px 10px;font-size:15px;color:var(--muted);font-weight:600;letter-spacing:.02em}
 .card h3{margin:0 0 12px}
@@ -35,8 +41,8 @@ h3{margin:22px 4px 10px;font-size:15px;color:var(--muted);font-weight:600;letter
 .hero{background:linear-gradient(135deg,#6C5CE7,#9B8CFF);color:#fff;border-radius:24px;
   padding:18px 20px;box-shadow:0 10px 28px rgba(108,92,231,.3);margin-bottom:16px;
   display:flex;justify-content:space-between;align-items:flex-start}
-.hero .t{font-size:14px;opacity:.9}
-.hero .big{font-size:34px;font-weight:800;margin:2px 0;letter-spacing:-.02em}
+.hero .t{font-family:var(--round);font-size:21px;font-weight:800;letter-spacing:-.01em}
+.hero .big{font-family:var(--round);font-size:38px;font-weight:800;margin:6px 0 2px;letter-spacing:-.01em}
 .hero .s{font-size:13px;opacity:.85}
 .icon-btn{background:rgba(255,255,255,.2);border:none;border-radius:12px;width:40px;height:40px;
   display:grid;place-items:center;color:#fff}
@@ -50,12 +56,13 @@ svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke
 input[type=text],input[type=email],input[type=password],input[type=search],input[type=date],input[type=number]{
   width:100%;font-size:16px;padding:14px;border-radius:14px;border:1px solid var(--border);
   background:var(--bg);color:var(--text);outline:none;font-family:inherit}
-input:focus{border-color:var(--primary)}
+input:focus{border-color:var(--primary);outline:none}
 .amount-card{text-align:center;padding:22px 16px}
 .amount{display:flex;justify-content:center;align-items:baseline;gap:6px}
-.amount input{width:auto;max-width:70%;text-align:right;font-size:52px;font-weight:800;border:none;
-  background:transparent;padding:0;letter-spacing:-.02em}
-.amount span{font-size:34px;font-weight:700;color:var(--muted)}
+.amount input{width:5ch;max-width:75%;text-align:center;font-family:var(--round);font-size:58px;font-weight:800;
+  border:none;background:transparent;padding:0;outline:none;box-shadow:none;color:var(--text);caret-color:var(--primary)}
+.amount input::placeholder{color:var(--muted);opacity:.4}
+.amount span{font-family:var(--round);font-size:36px;font-weight:800;color:var(--muted)}
 
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--bg);
   padding:4px;border-radius:14px}
@@ -88,12 +95,12 @@ input:focus{border-color:var(--primary)}
 .grow{flex:1;min-width:0;display:flex;flex-direction:column}
 .grow b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .grow small{color:var(--muted);font-size:12px}
-.amt{font-weight:700;white-space:nowrap}
+.amt{font-family:var(--round);font-weight:800;white-space:nowrap}
 .dayh{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;font-weight:600;margin:18px 4px 8px}
 .empty{text-align:center;color:var(--muted);padding:36px 12px;line-height:1.5}
 
 /* Resumen */
-.total{font-size:36px;font-weight:800;letter-spacing:-.02em}
+.total{font-family:var(--round);font-size:38px;font-weight:800;letter-spacing:-.01em}
 .sub{color:var(--muted);font-size:13px}
 .split{display:flex;height:12px;border-radius:99px;overflow:hidden;margin:16px 0 10px;background:var(--bg)}
 .split-l{display:flex;justify-content:space-between;font-size:13px;gap:8px}
@@ -163,9 +170,9 @@ input:focus{border-color:var(--primary)}
 <div id="app" class="hidden">
   <header class="hero">
     <div>
-      <div class="t">Gastos de casa · <span id="mesNombre"></span></div>
+      <div class="t">General D Porlier 80</div>
       <div class="big" id="heroTotal">0,00 €</div>
-      <div class="s">gastado este mes</div>
+      <div class="s">gastado en <span id="mesNombre"></span></div>
     </div>
     <button class="icon-btn" id="logout" title="Cerrar sesión" aria-label="Cerrar sesión">
       <svg class="i" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -373,6 +380,11 @@ function itemHTML(g) {
     <span class="amt">${eur(g.importe)}</span></button>`;
 }
 
+function ajustarAncho() {
+  const el = $('#importe');
+  el.style.width = Math.max(4, (el.value || el.placeholder).length + 0.6) + 'ch';
+}
+
 // ---------- Pestaña: Añadir ----------
 function renderConceptosForm() {
   const tipos = tiposPorFrecuencia();
@@ -408,7 +420,7 @@ async function guardar() {
   const { error } = await sb.from('gastos').insert({ fecha, importe, persona: state.persona, concepto: norm(concepto) });
   btn.disabled = false; btn.textContent = 'Guardar gasto';
   if (error) return toast('Error al guardar: ' + error.message, true);
-  $('#importe').value = ''; $('#concepto').value = ''; $('#fecha').value = hoyISO();
+  $('#importe').value = ''; $('#concepto').value = ''; $('#fecha').value = hoyISO(); ajustarAncho();
   marcarFechaChips();
   toast(`✅ ${eur(importe)} guardados en «${norm(concepto)}»`);
   await cargar();
@@ -563,6 +575,7 @@ function bind() {
     $('#fecha').value = b.dataset.f === 'hoy' ? hoyISO() : ayerISO(); marcarFechaChips(); };
   $('#fecha').addEventListener('change', marcarFechaChips);
   $('#guardar').onclick = guardar;
+  $('#importe').addEventListener('input', ajustarAncho);
   $('#importe').addEventListener('keydown', e => { if (e.key === 'Enter') $('#concepto').focus(); });
   $('#concepto').addEventListener('keydown', e => { if (e.key === 'Enter') guardar(); });
 
@@ -598,7 +611,7 @@ async function entrar() {
   $('#login').classList.add('hidden');
   $('#app').classList.remove('hidden'); $('#nav').classList.remove('hidden');
   if (!bound) { bind(); bound = true; }
-  $('#fecha').value = hoyISO(); marcarFechaChips(); renderPersonaSeg();
+  $('#fecha').value = hoyISO(); marcarFechaChips(); renderPersonaSeg(); ajustarAncho();
   await cargar();
 }
 $('#loginForm').addEventListener('submit', async e => {
