@@ -100,6 +100,14 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
   border:1px solid var(--border);background:var(--card);font-size:13px;font-weight:600}
 .cat .e{font-size:24px;line-height:1}
 .cat.on{background:var(--primary-soft);border-color:var(--primary);color:var(--primary)}
+.deuda .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.deuda .who{background:var(--bg);border-radius:16px;padding:12px}
+.deuda .who small{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;font-weight:600}
+.deuda .who b{display:block;font-family:var(--round);font-size:22px;font-weight:800;margin-top:4px}
+.deuda .res{border-radius:16px;padding:14px;text-align:center;background:var(--primary-soft)}
+.deuda .res .l{font-size:15px}
+.deuda .res .v{font-family:var(--round);font-size:32px;font-weight:800;color:var(--primary);margin:2px 0 4px}
+.deuda .nota{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.4}
 .btn{border:none;border-radius:16px;padding:15px;font-weight:700;font-size:16px;width:100%}
 .btn.primary{background:var(--primary);color:#fff;box-shadow:0 8px 20px rgba(108,92,231,.3)}
 .btn.primary:active{transform:scale(.99)}
@@ -233,6 +241,7 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
  
   <!-- RESUMEN -->
   <section class="view hidden" id="view-sum">
+    <div class="card deuda" id="deuda"></div>
     <div class="chips scroll" id="chipsPeriodo"></div>
     <div class="row2 hidden" id="rangoBox">
       <input type="date" id="desde" aria-label="Desde"><input type="date" id="hasta" aria-label="Hasta">
@@ -538,9 +547,37 @@ async function guardar() {
   await cargar();
 }
  
+// ---------- Cuentas del mes: quién debe a quién ----------
+// Lo que paga Moncho o Barbi se reparte a partes iguales. "Compartido" sale de la cuenta común y no cuenta.
+function renderDeuda() {
+  const [ini, fin] = mesRango(0);
+  const mes = state.gastos.filter(g => g.fecha >= ini && g.fecha <= fin);
+  const moncho = sum(mes.filter(g => g.persona === 'Moncho'));
+  const barbi = sum(mes.filter(g => g.persona === 'Barbi'));
+  const comun = sum(mes.filter(g => g.persona === 'Compartido'));
+  const dif = Math.round((moncho - barbi) * 100) / 100;
+  const deuda = Math.round((Math.abs(dif) / 2) * 100) / 100;
+  const deudor = dif > 0 ? 'Barbi' : 'Moncho', acreedor = dif > 0 ? 'Moncho' : 'Barbi';
+  const nombreMes = new Date().toLocaleDateString('es-ES', { month: 'long' });
+  const quien = (p, v) => `<div class="who"><small><i class="dot" style="background:${COLOR[p]}"></i>${p} ha pagado</small><b>${eur(v)}</b></div>`;
+  let resultado;
+  if (moncho + barbi === 0) {
+    resultado = `<div class="res"><div class="l"><b>✅ Estáis en paz</b></div><div class="sub">Aún no hay gastos de Moncho ni de Barbi este mes.</div></div>`;
+  } else if (dif === 0) {
+    resultado = `<div class="res"><div class="l"><b>✅ Estáis en paz</b></div><div class="sub">Habéis pagado lo mismo cada uno.</div></div>`;
+  } else {
+    resultado = `<div class="res"><div class="l"><b>${deudor}</b> debe a <b>${acreedor}</b></div><div class="v">${eur(deuda)}</div>
+      <div class="sub">Entre los dos habéis pagado ${eur(moncho + barbi)}: ${eur((moncho + barbi) / 2)} cada uno.</div></div>`;
+  }
+  $('#deuda').innerHTML = `<h3>Cuentas de ${nombreMes}</h3>
+    <div class="pair">${quien('Moncho', moncho)}${quien('Barbi', barbi)}</div>${resultado}
+    ${comun > 0 ? `<div class="nota">Los gastos Compartidos (cuenta común, ${eur(comun)}) no cuentan en este reparto.</div>` : ''}`;
+}
+ 
 // ---------- Pestaña: Resumen ----------
 let chart = null;
 function renderResumen() {
+  renderDeuda();
   const P = [['mes', 'Este mes'], ['mespasado', 'Mes pasado'], ['anio', 'Este año'], ['todo', 'Todo'], ['rango', 'Fechas']];
   $('#chipsPeriodo').innerHTML = P.map(([k, l]) => `<button class="chip ${state.periodo === k ? 'on' : ''}" data-k="${k}">${l}</button>`).join('');
   $('#rangoBox').classList.toggle('hidden', state.periodo !== 'rango');
