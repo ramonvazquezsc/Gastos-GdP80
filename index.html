@@ -100,6 +100,12 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
   border:1px solid var(--border);background:var(--card);font-size:13px;font-weight:600}
 .cat .e{font-size:24px;line-height:1}
 .cat.on{background:var(--primary-soft);border-color:var(--primary);color:var(--primary)}
+.selmes{margin-bottom:12px;font-weight:600}
+.deuda .aviso{font-size:13px;font-weight:600;color:#E17055;margin:-4px 0 10px}
+.deuda .res.ok{background:rgba(18,183,106,.13)}
+.deuda .res.ok .v{color:#12B76A}
+.deuda .res.warn{background:rgba(253,203,110,.22)}
+.deuda .acciones{display:grid;gap:8px;margin-top:10px}
 .deuda .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .deuda .who{background:var(--bg);border-radius:16px;padding:12px}
 .deuda .who small{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;font-weight:600}
@@ -350,7 +356,7 @@ const store = { get: k => { try { return localStorage.getItem(k); } catch { retu
                 set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
  
 const state = {
-  gastos: [], tab: 'add', cat: null,
+  gastos: [], tab: 'add', cat: null, deudaMes: null, liq: {}, liqOk: true,
   persona: PERSONAS.includes(store.get('persona')) ? store.get('persona') : 'Moncho',
   periodo: 'mes', desde: '', hasta: '', fPersona: null, fTipos: new Set(), agrup: null,
   limite: 120, edit: null,
@@ -375,6 +381,9 @@ async function cargar() {
     desde += PAG;
   }
   // "tipo" = una de las 6 categorías. Cualquier concepto antiguo que no sea una de ellas cuenta como "Otros".
+  const { data: liq, error: eLiq } = await sb.from('liquidaciones').select('*');
+  state.liqOk = !eLiq;
+  state.liq = eLiq ? {} : Object.fromEntries(liq.map(l => [l.mes, { ...l, importe: Number(l.importe) }]));
   state.gastos = todo.map(g => {
     const tipo = categoriaDe(g.concepto);
     const detalle = tipo !== 'Otros' ? '' : (g.detalle || (CAT_MAP[sinAcentos(g.concepto)] ? '' : g.concepto || ''));
@@ -549,29 +558,93 @@ async function guardar() {
  
 // ---------- Cuentas del mes: quién debe a quién ----------
 // Lo que paga Moncho o Barbi se reparte a partes iguales. "Compartido" sale de la cuenta común y no cuenta.
-function renderDeuda() {
-  const [ini, fin] = mesRango(0);
-  const mes = state.gastos.filter(g => g.fecha >= ini && g.fecha <= fin);
+const r2 = x => Math.round(x * 100) / 100;
+const claveMes = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+const nombreMes = k => cap(new Date(k + '-01T00:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).replace(' de ', ' '));
+function saldoMes(clave) {
+  const mes = state.gastos.filter(g => g.fecha.slice(0, 7) === clave);
   const moncho = sum(mes.filter(g => g.persona === 'Moncho'));
   const barbi = sum(mes.filter(g => g.persona === 'Barbi'));
   const comun = sum(mes.filter(g => g.persona === 'Compartido'));
-  const dif = Math.round((moncho - barbi) * 100) / 100;
-  const deuda = Math.round((Math.abs(dif) / 2) * 100) / 100;
-  const deudor = dif > 0 ? 'Barbi' : 'Moncho', acreedor = dif > 0 ? 'Moncho' : 'Barbi';
-  const nombreMes = new Date().toLocaleDateString('es-ES', { month: 'long' });
+  const dif = r2(moncho - barbi);
+  return { moncho, barbi, comun, dif, deuda: r2(Math.abs(dif) / 2),
+           deudor: dif > 0 ? 'Barbi' : 'Moncho', acreedor: dif > 0 ? 'Moncho' : 'Barbi' };
+}
+// Estado de un mes: vacio | paz | pendiente | liquidado | cambiado (se liquidó y después varió el saldo)
+function estadoMes(k) {
+  const s = saldoMes(k);
+  if (s.moncho + s.barbi === 0) return { s, tipo: 'vacio' };
+  if (s.dif === 0) return { s, tipo: 'paz' };
+  const l = state.liq[k];
+  if (!l) return { s, tipo: 'pendiente' };
+  if (l.importe === s.deuda && l.deudor === s.deudor) return { s, tipo: 'liquidado', l };
+  return { s, tipo: 'cambiado', l };
+}
+const fechaLarga = iso => new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+ 
+function renderDeuda() {
+  const actual = claveMes(new Date());
+  const claves = [...new Set([actual, ...state.gastos.map(g => g.fecha.slice(0, 7))])].sort().reverse();
+  const clave = claves.includes(state.deudaMes) ? state.deudaMes : actual;
+  const { s, tipo, l } = estadoMes(clave);
+ 
+  const etiqueta = k => {
+    const e = estadoMes(k);
+    const txt = { vacio: 'sin gastos', paz: 'en paz',
+      pendiente: `⏳ ${e.s.deudor} debe ${eur(e.s.deuda)}`,
+      liquidado: '✅ liquidado',
+      cambiado: `⚠️ cambió: ${e.s.deudor} debe ${eur(e.s.deuda)}` }[e.tipo];
+    return `<option value="${k}" ${k === clave ? 'selected' : ''}>${nombreMes(k)}${k === actual ? ' (actual)' : ''} · ${txt}</option>`;
+  };
+  const pendientes = claves.filter(k => ['pendiente', 'cambiado'].includes(estadoMes(k).tipo)).length;
+  const aviso = state.liqOk && pendientes
+    ? `<div class="aviso">⏳ ${pendientes} ${pendientes === 1 ? 'mes pendiente' : 'meses pendientes'} de liquidar</div>` : '';
+ 
   const quien = (p, v) => `<div class="who"><small><i class="dot" style="background:${COLOR[p]}"></i>${p} ha pagado</small><b>${eur(v)}</b></div>`;
+  const btnLiq = txt => state.liqOk ? `<button class="btn primary" id="btnLiq" data-mes="${clave}">${txt}</button>` : '';
+  const btnUndo = `<button class="btn ghost" id="btnDeshacer" data-mes="${clave}">Deshacer liquidación</button>`;
+  const reparto = `Entre los dos habéis pagado ${eur(s.moncho + s.barbi)}: ${eur((s.moncho + s.barbi) / 2)} cada uno.`;
+ 
   let resultado;
-  if (moncho + barbi === 0) {
-    resultado = `<div class="res"><div class="l"><b>✅ Estáis en paz</b></div><div class="sub">Aún no hay gastos de Moncho ni de Barbi este mes.</div></div>`;
-  } else if (dif === 0) {
+  if (tipo === 'vacio') {
+    resultado = `<div class="res"><div class="l"><b>✅ Estáis en paz</b></div><div class="sub">No hay gastos de Moncho ni de Barbi en este mes.</div></div>`;
+  } else if (tipo === 'paz') {
     resultado = `<div class="res"><div class="l"><b>✅ Estáis en paz</b></div><div class="sub">Habéis pagado lo mismo cada uno.</div></div>`;
+  } else if (tipo === 'pendiente') {
+    resultado = `<div class="res"><div class="l"><b>${s.deudor}</b> debe a <b>${s.acreedor}</b></div><div class="v">${eur(s.deuda)}</div><div class="sub">${reparto}</div></div>
+      <div class="acciones">${btnLiq('Marcar como liquidado')}</div>`;
+  } else if (tipo === 'liquidado') {
+    resultado = `<div class="res ok"><div class="l"><b>✅ Liquidado</b></div><div class="v">${eur(l.importe)}</div>
+      <div class="sub">${l.deudor} pagó a ${l.acreedor} · ${fechaLarga(l.liquidado_el)}</div></div>
+      <div class="acciones">${btnUndo}</div>`;
   } else {
-    resultado = `<div class="res"><div class="l"><b>${deudor}</b> debe a <b>${acreedor}</b></div><div class="v">${eur(deuda)}</div>
-      <div class="sub">Entre los dos habéis pagado ${eur(moncho + barbi)}: ${eur((moncho + barbi) / 2)} cada uno.</div></div>`;
+    resultado = `<div class="res warn"><div class="l"><b>⚠️ El saldo ha cambiado desde que se liquidó</b></div>
+      <div class="sub">Se liquidaron ${eur(l.importe)} (${l.deudor} → ${l.acreedor}). Ahora el saldo es: ${s.deudor} debe ${eur(s.deuda)} a ${s.acreedor}.</div></div>
+      <div class="acciones">${btnLiq('Marcar como liquidado con el nuevo saldo')}${btnUndo}</div>`;
   }
-  $('#deuda').innerHTML = `<h3>Cuentas de ${nombreMes}</h3>
-    <div class="pair">${quien('Moncho', moncho)}${quien('Barbi', barbi)}</div>${resultado}
-    ${comun > 0 ? `<div class="nota">Los gastos Compartidos (cuenta común, ${eur(comun)}) no cuentan en este reparto.</div>` : ''}`;
+ 
+  $('#deuda').innerHTML = `<h3>Cuentas del mes</h3>${aviso}
+    <select id="selMes" class="selmes" aria-label="Elegir mes">${claves.map(etiqueta).join('')}</select>
+    <div class="pair">${quien('Moncho', s.moncho)}${quien('Barbi', s.barbi)}</div>${resultado}
+    ${s.comun > 0 ? `<div class="nota">Los gastos Compartidos (cuenta común, ${eur(s.comun)}) no cuentan en este reparto.</div>` : ''}
+    ${!state.liqOk ? `<div class="nota">⚠️ Falta crear la tabla «liquidaciones» en Supabase para poder marcar meses como liquidados.</div>` : ''}`;
+}
+ 
+async function liquidar(clave, btn) {
+  const s = saldoMes(clave);
+  btn.disabled = true;
+  const { error } = await sb.from('liquidaciones').upsert(
+    { mes: clave, importe: s.deuda, deudor: s.deudor, acreedor: s.acreedor, liquidado_el: new Date().toISOString() });
+  if (error) { btn.disabled = false; return toast('No se pudo guardar: ' + error.message, true); }
+  toast('✅ Mes marcado como liquidado');
+  await cargar();
+}
+async function deshacerLiquidacion(clave, btn) {
+  btn.disabled = true;
+  const { error } = await sb.from('liquidaciones').delete().eq('mes', clave);
+  if (error) { btn.disabled = false; return toast('No se pudo deshacer: ' + error.message, true); }
+  toast('Liquidación deshecha');
+  await cargar();
 }
  
 // ---------- Pestaña: Resumen ----------
@@ -703,7 +776,7 @@ function setTab(t) {
   $$('.view').forEach(v => v.classList.toggle('hidden', v.id !== 'view-' + t));
   $$('.nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
   window.scrollTo(0, 0);
-  if (t === 'sum') renderResumen();
+  if (t === 'sum') { state.deudaMes = null; renderResumen(); }
   if (t === 'list') renderMovs();
 }
  
@@ -725,6 +798,12 @@ function bind() {
   $('#importe').addEventListener('input', e => { limpiarImporte(e.target); ajustarAncho(); });
   $('#sImporte').addEventListener('input', e => limpiarImporte(e.target));
   $('#themeBtn').onclick = cambiarTema;
+  $('#deuda').addEventListener('change', e => { if (e.target.id === 'selMes') { state.deudaMes = e.target.value; renderDeuda(); } });
+  $('#deuda').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b || !b.dataset.mes) return;
+    if (b.id === 'btnLiq') liquidar(b.dataset.mes, b);
+    if (b.id === 'btnDeshacer') deshacerLiquidacion(b.dataset.mes, b);
+  });
   $('#importe').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
   $('#detalle').addEventListener('keydown', e => { if (e.key === 'Enter') guardar(); });
  
