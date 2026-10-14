@@ -14,16 +14,22 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
 <title>Gastos de casa</title>
+<script>
+try {
+  var t = localStorage.getItem('tema');
+  if (t !== 'dark' && t !== 'light') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.dataset.theme = t;
+} catch (e) { document.documentElement.dataset.theme = 'light'; }
+</script>
 <style>
 :root{
   --bg:#F4F5FB; --card:#fff; --text:#1E2233; --muted:#7A8094; --border:#E8EAF3;
   --round:"Nunito",ui-rounded,"SF Pro Rounded","Hiragino Maru Gothic ProN",system-ui,sans-serif;
   --primary:#6C5CE7; --primary-soft:#EFECFF; --danger:#E5484D; --shadow:0 4px 20px rgba(30,34,80,.06);
 }
-@media (prefers-color-scheme: dark){
-  :root{ --bg:#0F111A; --card:#181B27; --text:#ECEEF6; --muted:#9097AD; --border:#262A3B;
-         --primary-soft:#2A2550; --shadow:none; }
-}
+:root{color-scheme:light}
+:root[data-theme="dark"]{ color-scheme:dark; --bg:#0F111A; --card:#181B27; --text:#ECEEF6; --muted:#9097AD;
+  --border:#262A3B; --primary-soft:#2A2550; --shadow:none; }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
@@ -33,21 +39,28 @@ button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .hidden{display:none!important}
 h3{margin:22px 4px 10px;font-size:15px;color:var(--muted);font-weight:600;letter-spacing:.02em}
 .card h3{margin:0 0 12px}
-
+ 
 #app{max-width:560px;margin:0 auto;
   padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(96px + env(safe-area-inset-bottom,0px))}
-
+ 
 /* Cabecera */
 .hero{background:linear-gradient(135deg,#6C5CE7,#9B8CFF);color:#fff;border-radius:24px;
-  padding:18px 20px;box-shadow:0 10px 28px rgba(108,92,231,.3);margin-bottom:16px;
-  display:flex;justify-content:space-between;align-items:flex-start}
-.hero .t{font-family:var(--round);font-size:21px;font-weight:800;letter-spacing:-.01em}
-.hero .big{font-family:var(--round);font-size:38px;font-weight:800;margin:6px 0 2px;letter-spacing:-.01em}
+  padding:18px 20px 14px;box-shadow:0 10px 28px rgba(108,92,231,.3);margin-bottom:16px}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.hero-btns{display:flex;gap:8px}
+.hero .t{display:flex;align-items:center;font-family:var(--round);font-size:21px;font-weight:800;letter-spacing:-.01em}
+.flag{width:27px;height:18px;border-radius:3px;margin-right:9px;flex:none;box-shadow:0 0 0 1px rgba(255,255,255,.4)}
+.hero-sum{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:8px}
+.hero .big{font-family:var(--round);font-size:28px;font-weight:800;letter-spacing:-.01em}
 .hero .s{font-size:13px;opacity:.85}
+.hero-chart{position:relative;height:100px;margin-top:8px}
+.hero-leg{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;margin-top:6px}
+.lg{display:inline-block;width:16px;height:0;border-top:3px solid #fff;margin-right:6px;vertical-align:middle;border-radius:2px}
+.lg.dash{border-top:2px dashed rgba(255,255,255,.75)}
 .icon-btn{background:rgba(255,255,255,.2);border:none;border-radius:12px;width:40px;height:40px;
   display:grid;place-items:center;color:#fff}
 svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-
+ 
 /* Tarjetas y formularios */
 .card{background:var(--card);border-radius:20px;padding:16px;box-shadow:var(--shadow);
   border:1px solid var(--border);margin-bottom:14px}
@@ -63,7 +76,7 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
   border:none;background:transparent;padding:0;outline:none;box-shadow:none;color:var(--text);caret-color:var(--primary)}
 .amount input::placeholder{color:var(--muted);opacity:.4}
 .amount span{font-family:var(--round);font-size:36px;font-weight:800;color:var(--muted)}
-
+ 
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--bg);
   padding:4px;border-radius:14px}
 .seg button{border:none;background:transparent;padding:12px;border-radius:11px;font-weight:600;color:var(--muted)}
@@ -72,7 +85,7 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
 .seg button.on[data-p="Barbi"]{background:#FF7AA8}
 .seg button.on[data-p="Compartido"]{background:#00B894}
 .seg.small button{padding:7px 12px;font-size:13px}
-
+ 
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .chips.scroll{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -16px 10px;padding:0 16px}
 .chips.scroll::-webkit-scrollbar{display:none}
@@ -81,7 +94,7 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
 .chip.on{background:var(--primary-soft);border-color:var(--primary);color:var(--primary);font-weight:600}
 .chips .datechip{padding:0;border:none;background:none}
 .chips .datechip input{padding:7px 12px;border-radius:999px;font-size:14px;width:auto}
-
+ 
 .cats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .cat{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 4px;border-radius:16px;
   border:1px solid var(--border);background:var(--card);font-size:13px;font-weight:600}
@@ -93,7 +106,7 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
 .btn.ghost{background:var(--bg);color:var(--text)}
 .btn.danger{background:transparent;color:var(--danger)}
 .btn:disabled{opacity:.6}
-
+ 
 /* Listas */
 .item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--border);
   background:var(--card);padding:12px 14px;border-radius:16px;margin-bottom:8px}
@@ -104,7 +117,7 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
 .amt{font-family:var(--round);font-weight:800;white-space:nowrap}
 .dayh{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;font-weight:600;margin:18px 4px 8px}
 .empty{text-align:center;color:var(--muted);padding:36px 12px;line-height:1.5}
-
+ 
 /* Resumen */
 .total{font-family:var(--round);font-size:38px;font-weight:800;letter-spacing:-.01em}
 .sub{color:var(--muted);font-size:13px}
@@ -119,7 +132,7 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
 .rk small{color:var(--muted);font-size:12px}
 .rk.off{opacity:.45}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-
+ 
 /* Navegación */
 .nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;
   padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));
@@ -129,7 +142,7 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
 .nav button{border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;
   padding:6px;border-radius:14px;color:var(--muted);font-size:12px;font-weight:600}
 .nav button.on{color:var(--primary);background:var(--primary-soft)}
-
+ 
 /* Hoja de edición */
 .sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center}
 .sheet-bg{position:absolute;inset:0;background:rgba(10,12,30,.5)}
@@ -138,13 +151,13 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
   animation:up .22s ease-out;max-height:92vh;overflow:auto}
 @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 .sheet-body h2{margin:0 0 4px;font-size:18px}
-
+ 
 .toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);
   background:#1E2233;color:#fff;padding:12px 18px;border-radius:14px;font-size:14px;font-weight:600;
   opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90%;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .toast.err{background:var(--danger)}
-
+ 
 /* Login */
 #login{min-height:100vh;display:grid;place-items:center;padding:20px}
 #login .box{width:100%;max-width:380px}
@@ -158,7 +171,7 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
 </style>
 </head>
 <body>
-
+ 
 <!-- LOGIN -->
 <div id="login" class="hidden">
   <form class="box" id="loginForm">
@@ -171,20 +184,27 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
     <button class="btn primary" id="loginBtn" type="submit">Entrar</button>
   </form>
 </div>
-
+ 
 <!-- APP -->
 <div id="app" class="hidden">
   <header class="hero">
-    <div>
-      <div class="t">General D Porlier 80</div>
-      <div class="big" id="heroTotal">0,00 €</div>
-      <div class="s">gastado en <span id="mesNombre"></span></div>
+    <div class="hero-top">
+      <div class="t">
+        <svg class="flag" viewBox="0 0 30 20" role="img" aria-label="España"><rect width="30" height="20" fill="#AA151B"/><rect y="5" width="30" height="10" fill="#F1BF00"/></svg>
+        General D Porlier 80
+      </div>
+      <div class="hero-btns">
+        <button class="icon-btn" id="themeBtn" aria-label="Cambiar tema claro u oscuro"></button>
+        <button class="icon-btn" id="logout" title="Cerrar sesión" aria-label="Cerrar sesión">
+          <svg class="i" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
     </div>
-    <button class="icon-btn" id="logout" title="Cerrar sesión" aria-label="Cerrar sesión">
-      <svg class="i" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-    </button>
+    <div class="hero-sum"><span class="big" id="heroTotal">0,00 €</span><span class="s">gastado en <span id="mesNombre"></span></span></div>
+    <div class="hero-chart"><canvas id="chartHero"></canvas></div>
+    <div class="hero-leg" id="heroLeg"></div>
   </header>
-
+ 
   <!-- NUEVO GASTO -->
   <section class="view" id="view-add">
     <div class="card amount-card">
@@ -210,7 +230,7 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
     <h3>Últimos gastos</h3>
     <div id="recent"></div>
   </section>
-
+ 
   <!-- RESUMEN -->
   <section class="view hidden" id="view-sum">
     <div class="chips scroll" id="chipsPeriodo"></div>
@@ -238,21 +258,21 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
       </div>
     </div>
   </section>
-
+ 
   <!-- MOVIMIENTOS -->
   <section class="view hidden" id="view-list">
     <input id="buscar" type="search" placeholder="🔍 Buscar por concepto o persona">
     <div id="movs"></div>
   </section>
 </div>
-
+ 
 <!-- Barra inferior -->
 <nav class="nav hidden" id="nav"><div class="nav-in">
   <button data-tab="add" class="on"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Añadir</button>
   <button data-tab="sum"><svg class="i" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Resumen</button>
   <button data-tab="list"><svg class="i" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Movimientos</button>
 </div></nav>
-
+ 
 <!-- Hoja de edición -->
 <div class="sheet hidden" id="sheet">
   <div class="sheet-bg" id="sheetBg"></div>
@@ -274,31 +294,31 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
     </div>
   </div>
 </div>
-
+ 
 <div class="toast" id="toast"></div>
-
+ 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
+ 
 // ====== CONFIGURACIÓN (la clave "publishable" es pública por diseño; los datos los protege el login) ======
 const SUPABASE_URL = 'https://ezfpytnqsdgkbqviigdp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_xKVBZQPg2UmOWLUVsBA1Mg_jFelORoc';
 // =========================================================================================================
-
+ 
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
-
+ 
 const PERSONAS = ['Moncho', 'Barbi', 'Compartido'];
 const COLOR = { Moncho: '#6C5CE7', Barbi: '#FF7AA8', Compartido: '#00B894' };
 const PALETA = ['#6C5CE7','#00B894','#FDCB6E','#FF7675','#0984E3','#E17055','#A29BFE','#55EFC4','#B2BEC3'];
-
+ 
 const CATEGORIAS = ['Supermercado', 'Wifi', 'Luz', 'Agua', 'Calefacción', 'Otros'];
 const ICON = { Supermercado: '🛒', Wifi: '📶', Luz: '💡', Agua: '💧', 'Calefacción': '🔥', Otros: '✨' };
 const CAT_COLOR = { Supermercado: '#6C5CE7', Wifi: '#0984E3', Luz: '#FDCB6E', Agua: '#00B894', 'Calefacción': '#E17055', Otros: '#A0A6B8' };
 const sinAcentos = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 const CAT_MAP = Object.fromEntries(CATEGORIAS.map(c => [sinAcentos(c), c]));
 const categoriaDe = concepto => CAT_MAP[sinAcentos(concepto)] || 'Otros';
-
+ 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const pad = n => String(n).padStart(2, '0');
@@ -319,21 +339,21 @@ const diaLabel = s => {
 };
 const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } },
                 set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
-
+ 
 const state = {
   gastos: [], tab: 'add', cat: null,
   persona: PERSONAS.includes(store.get('persona')) ? store.get('persona') : 'Moncho',
   periodo: 'mes', desde: '', hasta: '', fPersona: null, fTipos: new Set(), agrup: null,
   limite: 120, edit: null,
 };
-
+ 
 // ---------- Avisos ----------
 let toastT;
 function toast(msg, err = false) {
   const t = $('#toast'); t.textContent = msg; t.classList.toggle('err', err); t.classList.add('show');
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600);
 }
-
+ 
 // ---------- Datos ----------
 async function cargar() {
   let todo = [], desde = 0; const PAG = 1000;
@@ -353,13 +373,13 @@ async function cargar() {
   });
   renderTodo();
 }
-
+ 
 function tiposPorFrecuencia() {
   const m = new Map();
   state.gastos.forEach(g => m.set(g.tipo, (m.get(g.tipo) || 0) + 1));
   return [...m].sort((a, b) => b[1] - a[1]).map(x => x[0]);
 }
-
+ 
 // ---------- Rangos y filtros ----------
 function mesRango(offset = 0) {
   const n = new Date(); const y = n.getFullYear(), m = n.getMonth() + offset;
@@ -380,29 +400,105 @@ function filtrar(ini, fin) {
     (!state.fPersona || g.persona === state.fPersona) &&
     (state.fTipos.size === 0 || state.fTipos.has(g.tipo)));
 }
-
+ 
 // ---------- Render general ----------
 function renderTodo() {
   const [a, b] = mesRango(0);
   $('#heroTotal').textContent = eur(sum(state.gastos.filter(g => g.fecha >= a && g.fecha <= b)));
   $('#mesNombre').textContent = new Date().toLocaleDateString('es-ES', { month: 'long' });
-  renderRecent();
+  dibujarHero(); renderRecent();
   if (state.tab === 'sum') renderResumen();
   if (state.tab === 'list') renderMovs();
 }
-
+ 
 function itemHTML(g) {
   return `<button class="item" data-id="${g.id}">
     <span class="dot" style="background:${COLOR[g.persona]}"></span>
     <span class="grow"><b>${ICON[g.tipo]} ${esc(g.tipo)}</b><small>${g.detalle ? esc(g.detalle) + ' · ' : ''}${g.persona} · ${fechaCorta(g.fecha)}</small></span>
     <span class="amt">${eur(g.importe)}</span></button>`;
 }
-
+ 
+// ---------- Gráfica de la cabecera: mes en curso vs mes anterior (gasto acumulado por día) ----------
+let heroChart = null;
+function dibujarHero() {
+  const ahora = new Date(), y = ahora.getFullYear(), m = ahora.getMonth(), hoy = ahora.getDate();
+  const diasMes = new Date(y, m + 1, 0).getDate(), diasPrev = new Date(y, m, 0).getDate();
+  const [a, b] = mesRango(0), [pa, pb] = mesRango(-1);
+  const acumular = (ini, fin, dias, hasta) => {
+    const por = Array(dias).fill(0);
+    state.gastos.forEach(g => { if (g.fecha >= ini && g.fecha <= fin) por[Number(g.fecha.slice(8, 10)) - 1] += g.importe; });
+    let acc = 0;
+    return por.map((v, i) => { acc += v; return i < hasta ? Math.round(acc * 100) / 100 : null; });
+  };
+  const n = Math.max(diasMes, diasPrev);
+  const rellenar = arr => arr.concat(Array(n - arr.length).fill(null));
+  const actual = rellenar(acumular(a, b, diasMes, hoy));
+  const previo = rellenar(acumular(pa, pb, diasPrev, diasPrev));
+  const nombre = d => cap(d.toLocaleDateString('es-ES', { month: 'long' }));
+  const nAct = nombre(new Date(y, m, 1)), nPrev = nombre(new Date(y, m - 1, 1));
+  const totAct = sum(state.gastos.filter(g => g.fecha >= a && g.fecha <= b));
+  const totPrev = sum(state.gastos.filter(g => g.fecha >= pa && g.fecha <= pb));
+  $('#heroLeg').innerHTML =
+    `<span><i class="lg"></i>${nAct} ${eur(totAct)}</span><span><i class="lg dash"></i>${nPrev} ${eur(totPrev)}</span>`;
+  const puntos = actual.map((v, i) => i === hoy - 1 ? 4 : 0);
+  const animar = heroChart ? false : { duration: 600 };
+  heroChart?.destroy();
+  heroChart = new Chart($('#chartHero'), {
+    type: 'line',
+    data: {
+      labels: Array.from({ length: n }, (_, i) => i + 1),
+      datasets: [
+        { label: nAct, data: actual, borderColor: '#fff', borderWidth: 3, backgroundColor: 'rgba(255,255,255,.16)',
+          fill: 'origin', cubicInterpolationMode: 'monotone', pointRadius: puntos, pointBackgroundColor: '#fff',
+          pointBorderWidth: 0, spanGaps: false },
+        { label: nPrev, data: previo, borderColor: 'rgba(255,255,255,.65)', borderWidth: 2, borderDash: [5, 5],
+          fill: false, cubicInterpolationMode: 'monotone', pointRadius: 0, spanGaps: false },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: animar,
+      layout: { padding: { top: 6, right: 6, left: 2 } },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: 'rgba(20,18,50,.92)', titleColor: '#fff', bodyColor: '#fff',
+          padding: 10, cornerRadius: 10, displayColors: false,
+          callbacks: { title: it => `Día ${it[0].label}`, label: c => `${c.dataset.label}: ${eur(c.parsed.y)}` } },
+      },
+      scales: { x: { display: false }, y: { display: false, beginAtZero: true, grace: '12%' } },
+    },
+  });
+}
+ 
+// ---------- Importe: solo números ----------
+function limpiarImporte(el) {
+  let v = el.value.replace(/[^\d.,]/g, '').replace(/\./g, ',');
+  const i = v.indexOf(',');
+  if (i !== -1) v = v.slice(0, i + 1) + v.slice(i + 1).replace(/,/g, '').slice(0, 2);
+  v = v.slice(0, 10);
+  if (v !== el.value) el.value = v;
+}
+ 
+// ---------- Tema claro / oscuro ----------
+const SVG_LUNA = '<svg class="i" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+const SVG_SOL = '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+function pintarIconoTema() {
+  const oscuro = document.documentElement.dataset.theme === 'dark';
+  $('#themeBtn').innerHTML = oscuro ? SVG_SOL : SVG_LUNA;
+  $('#themeBtn').title = oscuro ? 'Cambiar a fondo claro' : 'Cambiar a fondo oscuro';
+}
+function cambiarTema() {
+  const nuevo = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = nuevo; store.set('tema', nuevo);
+  pintarIconoTema();
+  if (state.tab === 'sum') renderResumen();
+}
+ 
 function ajustarAncho() {
   const el = $('#importe');
   el.style.width = Math.max(4, (el.value || el.placeholder).length + 0.6) + 'ch';
 }
-
+ 
 // ---------- Pestaña: Añadir ----------
 function renderCats() {
   $('#chipsCat').innerHTML = CATEGORIAS.map(c =>
@@ -422,7 +518,7 @@ function renderRecent() {
   $('#recent').innerHTML = r.length ? r.map(itemHTML).join('')
     : '<div class="empty">Aún no hay gastos.<br>¡Añade el primero arriba! 👆</div>';
 }
-
+ 
 async function guardar() {
   const importe = parseImporte($('#importe').value);
   const fecha = $('#fecha').value || hoyISO();
@@ -441,7 +537,7 @@ async function guardar() {
   toast(`✅ ${eur(importe)} guardados en «${cat}»`);
   await cargar();
 }
-
+ 
 // ---------- Pestaña: Resumen ----------
 let chart = null;
 function renderResumen() {
@@ -452,13 +548,13 @@ function renderResumen() {
     .map(([k, l]) => `<button class="chip ${(state.fPersona || '') === k ? 'on' : ''}" data-p="${k}">${l}</button>`).join('');
   $('#chipsTiposF').innerHTML = `<button class="chip ${state.fTipos.size === 0 ? 'on' : ''}" data-t="">Todos los conceptos</button>` +
     CATEGORIAS.map(t => `<button class="chip ${state.fTipos.has(t) ? 'on' : ''}" data-t="${t}">${ICON[t]} ${t}</button>`).join('');
-
+ 
   const [ini, fin] = rango();
   const f = filtrar(ini, fin);
   $('#sumEmpty').classList.toggle('hidden', f.length > 0);
   $('#sumBody').classList.toggle('hidden', f.length === 0);
   if (!f.length) return;
-
+ 
   // Tarjeta total
   const total = sum(f);
   const por = Object.fromEntries(PERSONAS.map(p => [p, sum(f.filter(g => g.persona === p))]));
@@ -471,7 +567,7 @@ function renderResumen() {
   $('#kpi').innerHTML = `<div class="sub">Total</div><div class="total">${eur(total)}</div><div class="sub">${extra}</div>
     <div class="split">${PERSONAS.map(p => `<span style="width:${pje(p)}%;background:${COLOR[p]}"></span>`).join('')}</div>
     <div class="split-l">${PERSONAS.map(p => `<span><i style="background:${COLOR[p]}"></i>${p} ${eur(por[p])} · ${pje(p).toFixed(0)}%</span>`).join('')}</div>`;
-
+ 
   // Gráfico de evolución
   const fechas = f.map(g => g.fecha).sort();
   const dias = (new Date(fechas.at(-1)) - new Date(fechas[0])) / 864e5;
@@ -503,7 +599,7 @@ function renderResumen() {
         y: { stacked: true, ticks: { callback: v => v + ' €' }, grid: { color: css.getPropertyValue('--border').trim() } } },
     },
   });
-
+ 
   // Ranking por concepto (todo lo de «Otros» se agrupa en una sola fila)
   const porTipo = new Map();
   f.forEach(g => porTipo.set(g.tipo, (porTipo.get(g.tipo) || 0) + g.importe));
@@ -516,7 +612,7 @@ function renderResumen() {
       <small>${pct.toFixed(0)}%</small></button>`;
   }).join('');
 }
-
+ 
 // ---------- Pestaña: Movimientos ----------
 function renderMovs() {
   const q = $('#buscar').value.trim().toLowerCase();
@@ -533,7 +629,7 @@ function renderMovs() {
   if (total > rows.length) html += `<button class="btn ghost" id="verMas" style="margin-top:8px">Ver más (${total - rows.length})</button>`;
   $('#movs').innerHTML = html;
 }
-
+ 
 // ---------- Hoja de edición ----------
 function abrirSheet(id) {
   const g = state.gastos.find(x => String(x.id) === String(id)); if (!g) return;
@@ -546,7 +642,7 @@ function abrirSheet(id) {
 }
 function cerrarSheet() { $('#sheet').classList.add('hidden'); state.edit = null; resetBorrar(); }
 function resetBorrar() { const b = $('#sBorrar'); delete b.dataset.arm; b.textContent = 'Borrar gasto'; }
-
+ 
 async function guardarEdicion() {
   const importe = parseImporte($('#sImporte').value), cat = $('#sCat').value, detalle = cap($('#sDetalle').value.trim());
   if (!(importe > 0)) return toast('Importe no válido', true);
@@ -563,7 +659,7 @@ async function borrarGasto() {
   if (error) return toast('Error: ' + error.message, true);
   cerrarSheet(); toast('Gasto borrado 🗑️'); await cargar();
 }
-
+ 
 // ---------- Navegación ----------
 function setTab(t) {
   state.tab = t;
@@ -573,12 +669,12 @@ function setTab(t) {
   if (t === 'sum') renderResumen();
   if (t === 'list') renderMovs();
 }
-
+ 
 // ---------- Eventos ----------
 function bind() {
   $$('.nav button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
   $('#logout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
-
+ 
   $('#segPersona').onclick = e => { const b = e.target.closest('button'); if (!b) return;
     state.persona = b.dataset.p; store.set('persona', state.persona); renderPersonaSeg(); };
   $('#sCat').innerHTML = CATEGORIAS.map(c => `<option value="${c}">${ICON[c]} ${c}</option>`).join('');
@@ -589,10 +685,12 @@ function bind() {
     $('#fecha').value = b.dataset.f === 'hoy' ? hoyISO() : ayerISO(); marcarFechaChips(); };
   $('#fecha').addEventListener('change', marcarFechaChips);
   $('#guardar').onclick = guardar;
-  $('#importe').addEventListener('input', ajustarAncho);
+  $('#importe').addEventListener('input', e => { limpiarImporte(e.target); ajustarAncho(); });
+  $('#sImporte').addEventListener('input', e => limpiarImporte(e.target));
+  $('#themeBtn').onclick = cambiarTema;
   $('#importe').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
   $('#detalle').addEventListener('keydown', e => { if (e.key === 'Enter') guardar(); });
-
+ 
   $('#chipsPeriodo').onclick = e => { const b = e.target.closest('.chip'); if (!b) return;
     state.periodo = b.dataset.k; state.agrup = null; renderResumen(); };
   $('#desde').onchange = e => { state.desde = e.target.value; state.agrup = null; renderResumen(); };
@@ -603,14 +701,14 @@ function bind() {
   $('#chipsTiposF').onclick = e => { const b = e.target.closest('.chip'); if (b) toggleTipo(b.dataset.t); };
   $('#rank').onclick = e => { const b = e.target.closest('.rk'); if (b && !b.disabled) toggleTipo(b.dataset.t); };
   $('#segAgrup').onclick = e => { const b = e.target.closest('button'); if (!b) return; state.agrup = b.dataset.a; renderResumen(); };
-
+ 
   $('#buscar').addEventListener('input', () => { state.limite = 120; renderMovs(); });
   $('#movs').onclick = e => {
     if (e.target.closest('#verMas')) { state.limite += 120; return renderMovs(); }
     const it = e.target.closest('.item'); if (it) abrirSheet(it.dataset.id);
   };
   $('#recent').onclick = e => { const it = e.target.closest('.item'); if (it) abrirSheet(it.dataset.id); };
-
+ 
   $('#sSeg').onclick = e => { const b = e.target.closest('button'); if (!b) return;
     $$('#sSeg button').forEach(x => x.classList.toggle('on', x === b)); };
   $('#sGuardar').onclick = guardarEdicion;
@@ -618,14 +716,14 @@ function bind() {
   $('#sCerrar').onclick = cerrarSheet;
   $('#sheetBg').onclick = cerrarSheet;
 }
-
+ 
 // ---------- Inicio y login ----------
 let bound = false;
 async function entrar() {
   $('#login').classList.add('hidden');
   $('#app').classList.remove('hidden'); $('#nav').classList.remove('hidden');
   if (!bound) { bind(); bound = true; }
-  $('#fecha').value = hoyISO(); marcarFechaChips(); renderPersonaSeg(); renderCats(); ajustarAncho();
+  $('#fecha').value = hoyISO(); marcarFechaChips(); renderPersonaSeg(); renderCats(); ajustarAncho(); pintarIconoTema();
   await cargar();
 }
 $('#loginForm').addEventListener('submit', async e => {
@@ -636,7 +734,7 @@ $('#loginForm').addEventListener('submit', async e => {
   if (error) { $('#loginErr').textContent = 'Email o contraseña incorrectos.'; return; }
   entrar();
 });
-
+ 
 const { data: { session } } = await sb.auth.getSession();
 if (session) entrar(); else $('#login').classList.remove('hidden');
 </script>
