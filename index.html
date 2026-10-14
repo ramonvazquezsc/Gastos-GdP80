@@ -588,17 +588,10 @@ function renderDeuda() {
   const clave = claves.includes(state.deudaMes) ? state.deudaMes : actual;
   const { s, tipo, l } = estadoMes(clave);
  
-  const etiqueta = k => {
-    const e = estadoMes(k);
-    const txt = { vacio: 'sin gastos', paz: 'en paz',
-      pendiente: `⏳ ${e.s.deudor} debe ${eur(e.s.deuda)}`,
-      liquidado: '✅ liquidado',
-      cambiado: `⚠️ cambió: ${e.s.deudor} debe ${eur(e.s.deuda)}` }[e.tipo];
-    return `<option value="${k}" ${k === clave ? 'selected' : ''}>${nombreMes(k)}${k === actual ? ' (actual)' : ''} · ${txt}</option>`;
-  };
-  const pendientes = claves.filter(k => ['pendiente', 'cambiado'].includes(estadoMes(k).tipo)).length;
-  const aviso = state.liqOk && pendientes
-    ? `<div class="aviso">⏳ ${pendientes} ${pendientes === 1 ? 'mes pendiente' : 'meses pendientes'} de liquidar</div>` : '';
+  const etiqueta = k => `<option value="${k}" ${k === clave ? 'selected' : ''}>${nombreMes(k)}</option>`;
+  const pend = claves.filter(k => ['pendiente', 'cambiado'].includes(estadoMes(k).tipo));
+  const aviso = state.liqOk && pend.length
+    ? `<div class="aviso">⏳ Pendiente de liquidar: ${pend.map(k => nombreMes(k)).join(', ')}</div>` : '';
  
   const quien = (p, v) => `<div class="who"><small><i class="dot" style="background:${COLOR[p]}"></i>${p} ha pagado</small><b>${eur(v)}</b></div>`;
   const btnLiq = txt => state.liqOk ? `<button class="btn primary" id="btnLiq" data-mes="${clave}">${txt}</button>` : '';
