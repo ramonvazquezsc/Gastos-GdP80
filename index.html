@@ -53,7 +53,9 @@ h3{margin:22px 4px 10px;font-size:15px;color:var(--muted);font-weight:600;letter
 .hero-sum{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:8px}
 .hero .big{font-family:var(--round);font-size:28px;font-weight:800;letter-spacing:-.01em}
 .hero .s{font-size:13px;opacity:.85}
-.hero-chart{position:relative;height:100px;margin-top:8px}
+.hero-cmp{font-size:13px;font-weight:700;margin-top:6px}
+.hero-sub{font-size:12px;font-weight:600;opacity:.8;margin-top:14px;letter-spacing:.02em}
+.hero-chart{position:relative;height:175px;margin-top:6px}
 .hero-leg{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;margin-top:6px}
 .lg{display:inline-block;width:16px;height:0;border-top:3px solid #fff;margin-right:6px;vertical-align:middle;border-radius:2px}
 .lg.dash{border-top:2px dashed rgba(255,255,255,.75)}
@@ -107,6 +109,11 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
 .banner small{color:var(--muted)}
 .banner .x{margin-left:auto;border:none;background:none;font-size:20px;line-height:1;color:var(--muted);padding:0 2px}
 .banner .chip{margin-left:auto}
+.filtros{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.filtros .full{grid-column:1/-1}
+.filtros label.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.filtros label.f span{font-size:12px;font-weight:600;color:var(--muted);padding-left:4px}
+.filtros select,.filtros input[type=date]{background:var(--card)}
 .exp-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 2px 0}
 .chip.exp{background:var(--primary-soft);border-color:var(--primary);color:var(--primary);font-weight:600}
 .chip:disabled{opacity:.5}
@@ -224,6 +231,8 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
       </div>
     </div>
     <div class="hero-sum"><span class="big" id="heroTotal">0,00 €</span><span class="s">gastado en <span id="mesNombre"></span></span></div>
+    <div class="hero-cmp" id="heroCmp"></div>
+    <div class="hero-sub">Gasto acumulado día a día</div>
     <div class="hero-chart"><canvas id="chartHero"></canvas></div>
     <div class="hero-leg" id="heroLeg"></div>
   </header>
@@ -259,12 +268,14 @@ input:focus,select:focus{border-color:var(--primary);outline:none}
   <!-- RESUMEN -->
   <section class="view hidden" id="view-sum">
     <div class="card deuda" id="deuda"></div>
-    <div class="chips scroll" id="chipsPeriodo"></div>
-    <div class="row2 hidden" id="rangoBox">
-      <input type="date" id="desde" aria-label="Desde"><input type="date" id="hasta" aria-label="Hasta">
+    <div class="filtros">
+      <label class="f full"><span>Periodo</span><select id="fPeriodo" aria-label="Periodo"></select></label>
+      <div class="row2 full hidden" id="rangoBox">
+        <input type="date" id="desde" aria-label="Desde"><input type="date" id="hasta" aria-label="Hasta">
+      </div>
+      <label class="f"><span>Quién</span><select id="fQuien" aria-label="Quién"></select></label>
+      <label class="f"><span>Concepto</span><select id="fConcepto" aria-label="Concepto"></select></label>
     </div>
-    <div class="chips scroll" id="chipsPersonaF"></div>
-    <div class="chips scroll" id="chipsTiposF"></div>
     <div id="sumEmpty" class="empty hidden">No hay gastos con estos filtros.</div>
     <div id="sumBody">
       <div class="card" id="kpi"></div>
@@ -488,14 +499,42 @@ function dibujarHero() {
   const n = Math.max(diasMes, diasPrev);
   const rellenar = arr => arr.concat(Array(n - arr.length).fill(null));
   const actual = rellenar(acumular(a, b, diasMes, hoy));
-  const previo = rellenar(acumular(pa, pb, diasPrev, diasPrev));
+  const previoCompleto = acumular(pa, pb, diasPrev, diasPrev);
+  const previo = rellenar(previoCompleto);
   const nombre = d => cap(d.toLocaleDateString('es-ES', { month: 'long' }));
   const nAct = nombre(new Date(y, m, 1)), nPrev = nombre(new Date(y, m - 1, 1));
   const totAct = sum(state.gastos.filter(g => g.fecha >= a && g.fecha <= b));
   const totPrev = sum(state.gastos.filter(g => g.fecha >= pa && g.fecha <= pb));
+ 
+  // Frase de comparación: este mes hasta hoy vs. el mes pasado a esta misma altura
+  const alDia = previoCompleto[Math.min(hoy, diasPrev) - 1] || 0;
+  const dif = Math.round((totAct - alDia) * 100) / 100;
+  $('#heroCmp').textContent = totPrev === 0 ? 'Aún no hay datos del mes pasado para comparar'
+    : dif === 0 ? `Igual que a esta altura de ${nPrev.toLowerCase()}`
+    : `${dif > 0 ? '▲' : '▼'} ${eur(Math.abs(dif))} ${dif > 0 ? 'más' : 'menos'} que a esta altura de ${nPrev.toLowerCase()}`;
+ 
   $('#heroLeg').innerHTML =
-    `<span><i class="lg"></i>${nAct} ${eur(totAct)}</span><span><i class="lg dash"></i>${nPrev} ${eur(totPrev)}</span>`;
-  const puntos = actual.map((v, i) => i === hoy - 1 ? 4 : 0);
+    `<span><i class="lg"></i>${nAct} (hasta hoy): ${eur(totAct)}</span><span><i class="lg dash"></i>${nPrev} (completo): ${eur(totPrev)}</span>`;
+ 
+  // Etiqueta con el total actual junto al punto de hoy
+  const etiquetaHoy = {
+    id: 'etiquetaHoy',
+    afterDatasetsDraw(chart) {
+      const pt = chart.getDatasetMeta(0).data[hoy - 1];
+      if (!pt) return;
+      const { ctx, chartArea } = chart;
+      const txt = eur(totAct);
+      ctx.save();
+      ctx.font = '800 12px Nunito, system-ui, sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.textBaseline = 'bottom';
+      const w = ctx.measureText(txt).width;
+      ctx.fillText(txt, Math.min(Math.max(pt.x - w / 2, chartArea.left), chartArea.right - w + 6), pt.y - 11);
+      ctx.restore();
+    },
+  };
+ 
+  const puntos = actual.map((v, i) => i === hoy - 1 ? 6 : 0);
   const animar = heroChart ? false : { duration: 600 };
   heroChart?.destroy();
   heroChart = new Chart($('#chartHero'), {
@@ -503,16 +542,16 @@ function dibujarHero() {
     data: {
       labels: Array.from({ length: n }, (_, i) => i + 1),
       datasets: [
-        { label: nAct, data: actual, borderColor: '#fff', borderWidth: 3, backgroundColor: 'rgba(255,255,255,.16)',
+        { label: nAct, data: actual, borderColor: '#fff', borderWidth: 3.5, backgroundColor: 'rgba(255,255,255,.14)',
           fill: 'origin', cubicInterpolationMode: 'monotone', pointRadius: puntos, pointBackgroundColor: '#fff',
-          pointBorderWidth: 0, spanGaps: false },
-        { label: nPrev, data: previo, borderColor: 'rgba(255,255,255,.65)', borderWidth: 2, borderDash: [5, 5],
+          pointBorderColor: '#6C5CE7', pointBorderWidth: 3, spanGaps: false },
+        { label: nPrev, data: previo, borderColor: 'rgba(255,255,255,.8)', borderWidth: 2, borderDash: [6, 5],
           fill: false, cubicInterpolationMode: 'monotone', pointRadius: 0, spanGaps: false },
       ],
     },
     options: {
       responsive: true, maintainAspectRatio: false, animation: animar,
-      layout: { padding: { top: 6, right: 6, left: 2 } },
+      layout: { padding: { top: 16, right: 8, left: 0, bottom: 0 } },
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
@@ -520,8 +559,15 @@ function dibujarHero() {
           padding: 10, cornerRadius: 10, displayColors: false,
           callbacks: { title: it => `Día ${it[0].label}`, label: c => `${c.dataset.label}: ${eur(c.parsed.y)}` } },
       },
-      scales: { x: { display: false }, y: { display: false, beginAtZero: true, grace: '12%' } },
+      scales: {
+        x: { grid: { display: false }, border: { display: false },
+          ticks: { color: 'rgba(255,255,255,.85)', font: { size: 11 }, autoSkip: false, maxRotation: 0,
+                   callback: (v, i) => (i === 0 || (i + 1) % 5 === 0) ? i + 1 : '' } },
+        y: { beginAtZero: true, grace: '18%', border: { display: false }, grid: { color: 'rgba(255,255,255,.18)' },
+          ticks: { color: 'rgba(255,255,255,.85)', font: { size: 11 }, maxTicksLimit: 4, callback: v => v + ' €' } },
+      },
     },
+    plugins: [etiquetaHoy],
   });
 }
  
@@ -681,13 +727,13 @@ async function deshacerLiquidacion(clave, btn) {
 let chart = null;
 function renderResumen() {
   renderDeuda();
-  const P = [['mes', 'Este mes'], ['mespasado', 'Mes pasado'], ['anio', 'Este año'], ['todo', 'Todo'], ['rango', 'Fechas']];
-  $('#chipsPeriodo').innerHTML = P.map(([k, l]) => `<button class="chip ${state.periodo === k ? 'on' : ''}" data-k="${k}">${l}</button>`).join('');
+  const P = [['mes', 'Este mes'], ['mespasado', 'Mes pasado'], ['anio', 'Este año'], ['todo', 'Todo'], ['rango', 'Fechas concretas']];
+  const opts = (lista, actual) => lista.map(([v, l]) => `<option value="${v}" ${v === actual ? 'selected' : ''}>${l}</option>`).join('');
+  $('#fPeriodo').innerHTML = opts(P, state.periodo);
   $('#rangoBox').classList.toggle('hidden', state.periodo !== 'rango');
-  $('#chipsPersonaF').innerHTML = [['', 'Todos'], ...PERSONAS.map(p => [p, p])]
-    .map(([k, l]) => `<button class="chip ${(state.fPersona || '') === k ? 'on' : ''}" data-p="${k}">${l}</button>`).join('');
-  $('#chipsTiposF').innerHTML = `<button class="chip ${state.fTipos.size === 0 ? 'on' : ''}" data-t="">Todos los conceptos</button>` +
-    CATEGORIAS.map(t => `<button class="chip ${state.fTipos.has(t) ? 'on' : ''}" data-t="${t}">${ICON[t]} ${t}</button>`).join('');
+  $('#fQuien').innerHTML = opts([['', 'Todos'], ...PERSONAS.map(p => [p, p])], state.fPersona || '');
+  const tipoSel = state.fTipos.size === 1 ? [...state.fTipos][0] : '';
+  $('#fConcepto').innerHTML = opts([['', 'Todos'], ...CATEGORIAS.map(t => [t, `${ICON[t]} ${t}`])], tipoSel);
  
   const [ini, fin] = rango();
   const f = filtrar(ini, fin);
@@ -783,8 +829,8 @@ async function exportarCSV() {
     return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
   const fecha = f => `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(0, 4)}`;
-  const lineas = [['Importe (€)', 'Quién', 'Concepto', 'Fecha', 'Detalle'].join(';')];
-  rows.forEach(g => lineas.push([g.importe.toFixed(2).replace('.', ','), g.persona, g.tipo, fecha(g.fecha), txt(g.detalle)].join(';')));
+  const lineas = [['Fecha', 'Quién', 'Concepto', 'Detalle', 'Importe (€)'].join(';')];
+  rows.forEach(g => lineas.push([fecha(g.fecha), g.persona, g.tipo, txt(g.detalle), g.importe.toFixed(2).replace('.', ',')].join(';')));
   const nombre = `gastos-porlier80-${hoyISO()}.csv`;
   // BOM + separador ";" + coma decimal: se abre directamente en Excel en español
   const file = new File(['\uFEFF' + lineas.join('\r\n')], nombre, { type: 'text/csv;charset=utf-8' });
@@ -872,14 +918,13 @@ function bind() {
   $('#importe').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
   $('#detalle').addEventListener('keydown', e => { if (e.key === 'Enter') guardar(); });
  
-  $('#chipsPeriodo').onclick = e => { const b = e.target.closest('.chip'); if (!b) return;
-    state.periodo = b.dataset.k; state.agrup = null; renderResumen(); };
+  $('#fPeriodo').onchange = e => { state.periodo = e.target.value; state.agrup = null; renderResumen(); };
+  $('#fQuien').onchange = e => { state.fPersona = e.target.value || null; renderResumen(); };
+  $('#fConcepto').onchange = e => { state.fTipos = e.target.value ? new Set([e.target.value]) : new Set(); renderResumen(); };
   $('#desde').onchange = e => { state.desde = e.target.value; state.agrup = null; renderResumen(); };
   $('#hasta').onchange = e => { state.hasta = e.target.value; state.agrup = null; renderResumen(); };
-  $('#chipsPersonaF').onclick = e => { const b = e.target.closest('.chip'); if (!b) return;
-    state.fPersona = b.dataset.p || null; renderResumen(); };
-  const toggleTipo = t => { if (!t) state.fTipos.clear(); else state.fTipos.has(t) ? state.fTipos.delete(t) : state.fTipos.add(t); renderResumen(); };
-  $('#chipsTiposF').onclick = e => { const b = e.target.closest('.chip'); if (b) toggleTipo(b.dataset.t); };
+  // Tocar un concepto del ranking lo filtra; volver a tocarlo quita el filtro
+  const toggleTipo = t => { state.fTipos = (state.fTipos.size === 1 && state.fTipos.has(t)) ? new Set() : new Set([t]); renderResumen(); };
   $('#rank').onclick = e => { const b = e.target.closest('.rk'); if (b && !b.disabled) toggleTipo(b.dataset.t); };
   $('#segAgrup').onclick = e => { const b = e.target.closest('button'); if (!b) return; state.agrup = b.dataset.a; renderResumen(); };
  
