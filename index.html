@@ -350,9 +350,9 @@ const PERSONAS = ['Moncho', 'Barbi', 'Compartido'];
 const COLOR = { Moncho: '#6C5CE7', Barbi: '#FF7AA8', Compartido: '#00B894' };
 const PALETA = ['#6C5CE7','#00B894','#FDCB6E','#FF7675','#0984E3','#E17055','#A29BFE','#55EFC4','#B2BEC3'];
  
-const CATEGORIAS = ['Supermercado', 'Wifi', 'Luz', 'Agua', 'Calefacción', 'Otros'];
-const ICON = { Supermercado: '🛒', Wifi: '📶', Luz: '💡', Agua: '💧', 'Calefacción': '🔥', Otros: '✨' };
-const CAT_COLOR = { Supermercado: '#6C5CE7', Wifi: '#0984E3', Luz: '#FDCB6E', Agua: '#00B894', 'Calefacción': '#E17055', Otros: '#A0A6B8' };
+const CATEGORIAS = ['Supermercado', 'Wifi', 'Luz', 'Agua', 'Calefacción', 'Limpieza', 'Otros'];
+const ICON = { Supermercado: '🛒', Wifi: '📶', Luz: '💡', Agua: '💧', 'Calefacción': '🔥', Limpieza: '🧹', Otros: '✨' };
+const CAT_COLOR = { Supermercado: '#6C5CE7', Wifi: '#0984E3', Luz: '#FDCB6E', Agua: '#00B894', 'Calefacción': '#E17055', Limpieza: '#A3CB38', Otros: '#A0A6B8' };
 const sinAcentos = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 const CAT_MAP = Object.fromEntries(CATEGORIAS.map(c => [sinAcentos(c), c]));
 const categoriaDe = concepto => CAT_MAP[sinAcentos(concepto)] || 'Otros';
@@ -427,7 +427,7 @@ async function cargar() {
     if (data.length < PAG) break;
     desde += PAG;
   }
-  // "tipo" = una de las 6 categorías. Cualquier concepto antiguo que no sea una de ellas cuenta como "Otros".
+  // "tipo" = una de las categorías. Cualquier concepto antiguo que no sea una de ellas cuenta como "Otros".
   const { data: liq, error: eLiq } = await sb.from('liquidaciones').select('*');
   state.liqOk = !eLiq;
   state.liq = eLiq ? {} : Object.fromEntries(liq.map(l => [l.mes, { ...l, importe: Number(l.importe) }]));
